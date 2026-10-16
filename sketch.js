@@ -1,0 +1,301 @@
+let x, y, xDir, yDir, speed;
+let size;
+let angle;
+let sky;
+let t = 0;
+let stars = [];
+let trail = [];
+let puffs = [];
+let domeR, domeG, domeB;
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  angleMode(DEGREES);
+
+  sky = createGraphics(80, 60);
+  sky.pixelDensity(1);
+
+  x = width / 2;
+  y = height / 2;
+  xDir = random([-1, 1]) * random(1, 1.6);
+  yDir = random([-1, 1]) * random(0.8, 1.4);
+  speed = 2;
+  size = min(width, height) * 0.11;
+  angle = 0;
+
+  randomDome();
+  for (let i = 0; i < 90; i++) {
+    stars.push({ x: random(width), y: random(height), s: random(2, 6), ph: random(360) });
+  }
+}
+
+function draw() {
+  drawSky();
+  drawStars();
+
+  updateTrail();
+  drawTrail();
+
+  update();
+  keepInCanvas();
+  display();
+
+  angle += 3;
+}
+
+function mapSin(a, target1, target2) {
+  let myMap = map(sin(a), -1, 1, target1, target2);
+  return myMap;
+}
+
+function update() {
+  x += xDir * speed;
+  y += yDir * speed;
+}
+
+function keepInCanvas() {
+  let mx = size * 1.0;
+  let top = size * 1.0;
+  let bottom = height - size * 1.5;
+
+  if (x < mx || x > width - mx) {
+    xDir = -xDir;
+    randomDome();
+    burst();
+  }
+  if (y < top || y > bottom) {
+    yDir = -yDir;
+    randomDome();
+    burst();
+  }
+  x = constrain(x, mx, width - mx);
+  y = constrain(y, top, bottom);
+}
+
+function randomDome() {
+  domeR = random(150, 255);
+  domeG = random(150, 255);
+  domeB = random(150, 255);
+}
+
+function display() {
+  let bob = mapSin(angle * 2, -size * 0.12, size * 0.12);
+  let tilt = xDir * 5 + mapSin(angle * 1.5, -4, 4);
+
+  push();
+  translate(x, y + bob);
+  rotate(tilt);
+  drawBeam();
+  drawAlien();
+  drawDome();
+  drawSaucer();
+  pop();
+}
+
+function drawBeam() {
+  let bw = mapSin(angle * 3, size * 0.45, size * 0.75);
+  noStroke();
+  fill(255, 250, 190, mapSin(angle * 3, 35, 85));
+  quad(-size * 0.25, size * 0.15, size * 0.25, size * 0.15, bw, size * 1.35, -bw, size * 1.35);
+  for (let i = 1; i <= 3; i++) {
+    let by = size * 0.15 + i * size * 0.3 + mapSin(angle * 4, 0, size * 0.3);
+    let w = map(by, size * 0.15, size * 1.35, size * 0.5, bw * 2);
+    fill(255, 255, 255, 40);
+    ellipse(0, by, w, size * 0.08);
+  }
+}
+
+function drawAlien() {
+  let skinR = mapSin(angle, 90, 150);
+  let skinG = mapSin(angle, 225, 255);
+  let skinB = mapSin(angle, 120, 210);
+
+  stroke(40, 110, 70);
+  strokeWeight(2);
+  for (let side = -1; side <= 1; side += 2) {
+    let ax = side * size * 0.12 + mapSin(angle * 3 + side * 60, -size * 0.04, size * 0.04);
+    let ay = -size * 0.74;
+    line(side * size * 0.07, -size * 0.58, ax, ay);
+    noStroke();
+    fill(255, mapSin(angle * 4 + side * 90, 120, 240), mapSin(angle * 4 + side * 90, 220, 120));
+    drawingContext.shadowBlur = 12;
+    drawingContext.shadowColor = 'rgba(255, 200, 230, 0.9)';
+    circle(ax, ay, size * 0.07);
+    drawingContext.shadowBlur = 0;
+    stroke(40, 110, 70);
+  }
+
+  fill(skinR, skinG, skinB);
+  ellipse(0, -size * 0.4, size * 0.38, size * 0.4);
+
+  let blinking = frameCount % 180 < 6;
+  for (let side = -1; side <= 1; side += 2) {
+    push();
+    translate(side * size * 0.085, -size * 0.43);
+    rotate(side * 25);
+    noStroke();
+    if (blinking) {
+      stroke(20);
+      strokeWeight(2);
+      line(-size * 0.05, 0, size * 0.05, 0);
+    } else {
+      fill(20, 10, 40);
+      ellipse(0, 0, size * 0.13, size * 0.08);
+      fill(255);
+      circle(-size * 0.02, -size * 0.015, size * 0.025);
+    }
+    pop();
+  }
+
+  noFill();
+  stroke(40, 110, 70);
+  strokeWeight(2);
+  arc(0, -size * 0.32, size * 0.08, size * 0.05, 0, 180);
+
+  noStroke();
+  fill(255, 140, 180, 120);
+  circle(-size * 0.12, -size * 0.34, size * 0.05);
+  circle(size * 0.12, -size * 0.34, size * 0.05);
+}
+
+function drawDome() {
+  fill(domeR, domeG, domeB, 70);
+  stroke(255, 255, 255, 160);
+  strokeWeight(2);
+  arc(0, -size * 0.1, size * 0.8, size * 1.3, 180, 360, CHORD);
+
+  noFill();
+  stroke(255, 255, 255, 130);
+  strokeWeight(3);
+  arc(0, -size * 0.1, size * 0.6, size * 1.05, 205, 245);
+}
+
+function drawSaucer() {
+  stroke(120, 110, 150);
+  strokeWeight(2);
+  fill(205, 200, 225);
+  ellipse(0, 0, size * 1.8, size * 0.5);
+
+  fill(235, 232, 245);
+  ellipse(0, -size * 0.07, size * 1.2, size * 0.22);
+
+  noStroke();
+  fill(255, 255, 255, 90);
+  ellipse(-size * 0.4, -size * 0.06, size * 0.4, size * 0.06);
+
+  let n = 7;
+  for (let i = 0; i < n; i++) {
+    let a = map(i, 0, n - 1, 20, 160);
+    let lx = cos(a) * size * 0.78;
+    let ly = sin(a) * size * 0.17;
+    let g = mapSin(angle * 4 + i * 50, 90, 240);
+    let b = mapSin(angle * 4 + i * 50, 230, 120);
+    drawingContext.shadowBlur = mapSin(angle * 4 + i * 50, 4, 16);
+    drawingContext.shadowColor = 'rgba(255, 220, 120, 0.9)';
+    fill(255, g, b);
+    circle(lx, ly, size * 0.09);
+    drawingContext.shadowBlur = 0;
+  }
+}
+
+function updateTrail() {
+  trail.push({ x: x, y: y + mapSin(angle * 2, -size * 0.12, size * 0.12) });
+  if (trail.length > 90) trail.shift();
+
+  puffs.push({
+    x: x - xDir * size * 0.7 + random(-5, 5),
+    y: y + random(-6, 6),
+    s: random(0.15, 0.35) * size,
+    hue: (frameCount * 3) % 360,
+    vx: -xDir * random(0.2, 0.6),
+    vy: random(-0.3, 0.3),
+    life: 1
+  });
+
+  for (let i = puffs.length - 1; i >= 0; i--) {
+    let p = puffs[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.s *= 1.01;
+    p.life -= 1 / 120;
+    if (p.life <= 0) puffs.splice(i, 1);
+  }
+}
+
+function drawTrail() {
+  push();
+  colorMode(HSB, 360, 100, 100, 100);
+  for (let i = 1; i < trail.length; i++) {
+    let f = i / trail.length;
+    stroke((frameCount * 2 + i * 4) % 360, 35, 100, f * 55);
+    strokeWeight(size * 0.35 * f);
+    line(trail[i - 1].x, trail[i - 1].y, trail[i].x, trail[i].y);
+  }
+  noStroke();
+  for (let p of puffs) {
+    let pulse = mapSin(angle * 3 + p.hue, 0.85, 1.15);
+    fill(p.hue, 30, 100, 60 * p.life);
+    circle(p.x, p.y, p.s * pulse);
+    fill(0, 0, 100, 70 * p.life);
+    circle(p.x, p.y, p.s * 0.25);
+  }
+  pop();
+}
+
+function burst() {
+  for (let i = 0; i < 14; i++) {
+    let a = random(360);
+    let sp = random(1, 3);
+    puffs.push({
+      x: x,
+      y: y,
+      s: random(0.1, 0.25) * size,
+      hue: random(360),
+      vx: cos(a) * sp,
+      vy: sin(a) * sp,
+      life: 1
+    });
+  }
+}
+
+function drawSky() {
+  sky.loadPixels();
+  for (let j = 0; j < sky.height; j++) {
+    for (let i = 0; i < sky.width; i++) {
+      let n = noise(i * 0.05, j * 0.05 + t, t * 0.4);
+      let glow = mapSin(n * 700 + frameCount * 1.5, 0, 1);
+      let idx = (j * sky.width + i) * 4;
+      sky.pixels[idx] = 235 + n * 20;
+      sky.pixels[idx + 1] = 120 + n * 80 + glow * 25;
+      sky.pixels[idx + 2] = 175 + n * 60 + glow * 20;
+      sky.pixels[idx + 3] = 255;
+    }
+  }
+  sky.updatePixels();
+  image(sky, 0, 0, width, height);
+  t += 0.002;
+}
+
+function drawStars() {
+  for (let s of stars) {
+    let tw = mapSin(angle * 2 + s.ph, 0.15, 1);
+    noStroke();
+    fill(255, 255, 255, 230 * tw);
+    circle(s.x, s.y, s.s * tw);
+    if (tw > 0.75) {
+      stroke(255, 255, 255, 180 * tw);
+      strokeWeight(1);
+      line(s.x - s.s * 1.5, s.y, s.x + s.s * 1.5, s.y);
+      line(s.x, s.y - s.s * 1.5, s.x, s.y + s.s * 1.5);
+    }
+  }
+}
+
+function mousePressed() {
+  burst();
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  size = min(width, height) * 0.11;
+}
